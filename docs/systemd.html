@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Custom systemd Service | Nginx Reverse Proxy</title><link rel="stylesheet" href="../assets/style.css"></head><body><header><div class="topbar"><a class="brand" href="../index.html">Nginx Reverse Proxy</a><nav class="nav"><a href="installation.html">Installation</a><a href="linux-commands.html">Commands</a><a href="troubleshooting.html">Testing</a><button class="theme" data-theme-toggle aria-label="Toggle theme">☾</button></nav></div></header><div class="layout"><aside class="sidebar"><strong>Advanced guide</strong><a href="#purpose">Purpose</a><a href="#service">Service file</a><a href="#install">Install</a><a href="#test">Test</a><a href="#security">Security notes</a></aside><main><section class="card" id="purpose"><div class="eyebrow">Advanced users</div><h1 style="font-size:clamp(2rem,5vw,3.8rem)">Custom Nginx systemd Service</h1><p class="lead">Use this service when the main Nginx configuration and PID file are stored under <code>/Nginx</code> rather than the distribution defaults.</p><div class="warning"><strong>Important:</strong> the <code>pid</code> directive in <code>/Nginx/nginx.conf</code> must be <code>pid /Nginx/pid/nginx.pid;</code>, and the directory must exist before startup.</div></section><section class="card" id="service"><h2>Service file</h2><pre><code>[Unit]
+Description=Custom Nginx Web Server
+Documentation=https://nginx.org/en/docs/
+After=network-online.target local-fs.target
+Wants=network-online.target
+
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=forking
+PIDFile=/Nginx/pid/nginx.pid
+ExecStartPre=/usr/sbin/nginx -t -c /Nginx/nginx.conf
+ExecStart=/usr/sbin/nginx -c /Nginx/nginx.conf
+ExecReload=/usr/sbin/nginx -s reload -c /Nginx/nginx.conf
+ExecStop=/usr/sbin/nginx -s quit -c /Nginx/nginx.conf
+Restart=on-failure
+RestartSec=5
+KillMode=mixed
+TimeoutStopSec=15
+LimitNOFILE=65535
+PrivateTmp=true
+ProtectSystem=full
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target</code></pre><p>Download the repository version from <a href="../examples/nginx-custom.service">examples/nginx-custom.service</a>.</p></section><section class="card" id="install"><h2>Install the service</h2><pre><code>sudo install -d -m 0755 /Nginx/pid
+sudo cp examples/nginx-custom.service /etc/systemd/system/nginx-custom.service
+sudo systemctl daemon-reload
+sudo systemctl enable nginx-custom.service
+sudo systemctl start nginx-custom.service</code></pre></section><section class="card" id="test"><h2>Validate and operate</h2><pre><code>sudo /usr/sbin/nginx -t -c /Nginx/nginx.conf
+sudo systemctl status nginx-custom.service --no-pager
+sudo journalctl -u nginx-custom.service -n 100 --no-pager
+sudo systemctl reload nginx-custom.service
+sudo systemctl stop nginx-custom.service</code></pre></section><section class="card" id="security"><h2>Security and compatibility notes</h2><ul><li><code>ProtectSystem=full</code> makes system directories read-only but still permits writes to locations such as <code>/var</code> and <code>/home</code>. Confirm all custom log, cache, temporary, and PID paths remain writable.</li><li><code>PrivateTmp=true</code> gives the service private temporary directories.</li><li><code>NoNewPrivileges=true</code> prevents processes from gaining new privileges.</li><li>The Nginx binary path may differ if Nginx was compiled or installed manually. Confirm it with <code>command -v nginx</code>.</li><li>A package-managed Nginx service may already exist. Avoid running both services on the same listening ports.</li></ul></section></main></div><script src="../assets/app.js"></script></body></html>
