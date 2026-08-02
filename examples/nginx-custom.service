@@ -1,0 +1,48 @@
+[Unit]
+Description=Custom Nginx Web Server
+Documentation=https://nginx.org/en/docs/
+After=network-online.target local-fs.target
+Wants=network-online.target
+
+# Prevent infinite restart loops
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=forking
+
+# Custom PID file
+PIDFile=/Nginx/pid/nginx.pid
+
+# Validate configuration before startup
+ExecStartPre=/usr/sbin/nginx -t -c /Nginx/nginx.conf
+
+# Start Nginx
+ExecStart=/usr/sbin/nginx -c /Nginx/nginx.conf
+
+# Reload configuration without downtime
+ExecReload=/usr/sbin/nginx -s reload -c /Nginx/nginx.conf
+
+# Graceful shutdown
+ExecStop=/usr/sbin/nginx -s quit -c /Nginx/nginx.conf
+
+# Restart on crash
+Restart=on-failure
+RestartSec=5
+
+# Allow workers to stop correctly
+KillMode=mixed
+
+# Wait before forcing stop
+TimeoutStopSec=15
+
+# High connection limits
+LimitNOFILE=65535
+
+# Security hardening
+PrivateTmp=true
+ProtectSystem=full
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
