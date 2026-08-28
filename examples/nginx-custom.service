@@ -1,3 +1,9 @@
+# ============================================================
+# Author  : Mohammed Alotaibi
+# Website : https://motaibi1989.com
+# GitHub  : https://github.com/Motaibi1989
+# ============================================================
+
 [Unit]
 Description=Custom Nginx Web Server
 Documentation=https://nginx.org/en/docs/
